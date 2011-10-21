@@ -211,5 +211,8 @@ libstlport.so           0x9D100000 # [~3M] for external/stlport
 libzxing.so             0x9D000000 # [<64K] for goggles
 libinterstitial.so      0x9CF00000 # [<64K] for goggles
 liblept.so              0x9CA00000 # [~5M] for external/leptonica
-libmtdutils.so          0x9C900000 # [<64K] for recovery tools
+libmtdutils.so          0x9C9E0000 # [<64K] for recovery tools
+libmmcutils.so          0x9C8C0000 # [<64K] for recovery tools
+libbmlutils.so          0x9C8A0000 # [<64K] for recovery tools
+libflashutils.so        0x9C880000 # [<64K] for recovery tools
 
