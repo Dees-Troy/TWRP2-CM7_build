@@ -24,13 +24,13 @@ static mapentry *maplist = 0;
    prelink map, or the prelink step will fail.
 */
 
-#ifdef VM_SPLIT_2G
-#define PRELINK_MIN 0x50000000
-#define PRELINK_MAX 0x6FFFFFFF
-#else
+// 0 = none, 1 = normal, 2 = 2G
+static int prelinkMode = 0;
+
+#define PRELINK_2G_MIN 0x50000000
+#define PRELINK_2G_MAX 0x6FFFFFFF
 #define PRELINK_MIN 0x90000000
 #define PRELINK_MAX 0xBFFFFFFF
-#endif
 
 void pm_init(const char *file)
 {
@@ -95,9 +95,31 @@ void pm_init(const char *file)
                prelinker will exit with an error.  See
                pm_report_library_size_in_memory().
             */
-            FAILIF((n < PRELINK_MIN) || (n > PRELINK_MAX),
-                   "%s:%d base 0x%08x out of range.\n",
-                   file, line, n);
+
+            if (prelinkMode == 0)
+            {
+                if (n >= PRELINK_MIN && n <= PRELINK_MAX)
+                    prelinkMode = 1;
+                else if (n >= PRELINK_2G_MIN && n <= PRELINK_2G_MAX)
+                    prelinkMode = 2;
+                else
+                {
+                    FAILIF(1, "%s:%d base 0x%08x out of range.\n",
+                           file, line, n);
+                }
+            }
+            else if (prelinkMode == 1)
+            {
+                FAILIF((n < PRELINK_MIN) || (n > PRELINK_MAX),
+                       "%s:%d base 0x%08x out of range.\n",
+                       file, line, n);
+            }
+            else
+            {
+                FAILIF((n < PRELINK_2G_MIN) || (n > PRELINK_2G_MAX),
+                       "%s:%d base 0x%08x out of range.\n",
+                       file, line, n);
+            }
 
             me = malloc(sizeof(mapentry));
             FAILIF(me == NULL, "Out of memory parsing %s\n", file);
