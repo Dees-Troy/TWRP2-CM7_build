@@ -835,6 +835,8 @@ else
 endif
 	cp -rf $(TARGET_OUT_EXECUTABLES)/* $(TARGET_RECOVERY_ROOT_OUT)/sbin/
 	cp -rf $(TARGET_OUT_OPTIONAL_EXECUTABLES)/busybox $(TARGET_RECOVERY_ROOT_OUT)/sbin/
+	rm -f $(TARGET_RECOVERY_ROOT_OUT)/sbin/sh
+	ln -s busybox $(TARGET_RECOVERY_ROOT_OUT)/sbin/sh
 	cp -rf $(TARGET_OUT_SHARED_LIBRARIES)/* $(TARGET_RECOVERY_ROOT_OUT)/sbin/
 	@echo ----- Made recovery filesystem -------- $(TARGET_RECOVERY_ROOT_OUT)
 	@touch $(TARGET_RECOVERY_ROOT_TIMESTAMP)
@@ -851,6 +853,9 @@ $(recovery_ramdisk): $(MKBOOTFS) \
     $(recovery_uncompressed_ramdisk)
 	@echo ----- Making recovery ramdisk ------
 	$(MINIGZIP) < $(recovery_uncompressed_ramdisk) > $@
+	$(hide) if [ -f $(TARGET_DEVICE_DIR)/makemulti.sh ]; then \
+	          $(TARGET_DEVICE_DIR)/makemulti.sh -r; \
+	        fi
 
 ifeq ($(BOARD_USES_UBOOT),true)
 #BOARD_USES_UBOOT
