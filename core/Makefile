@@ -718,15 +718,20 @@ recovery_ramdisk := $(PRODUCT_OUT)/ramdisk-recovery.img
 recovery_build_prop := $(INSTALLED_BUILD_PROP_TARGET)
 recovery_binary := $(call intermediates-dir-for,EXECUTABLES,recovery)/recovery
 recovery_resources_common := $(call include-path-for, recovery)/res
+recovery_resources_sbin := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/sbin))
 recovery_resources_private := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/res))
 recovery_resources_devices_common := $(call include-path-for, recovery)/gui/devices/common/res
 recovery_resources_devices_private := $(call include-path-for, recovery)/gui/devices/$(DEVICE_RESOLUTION)/res
 recovery_resource_deps := $(shell find $(recovery_resources_common) \
-  $(recovery_resources_private) $(recovery_resources_devices_private) $(recovery_resources_devices_common) -type f)
+  $(recovery_resources_private) $(recovery_resources_sbin) $(recovery_resources_devices_private) $(recovery_resources_devices_common) -type f)
 recovery_fstab := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery.fstab))
 
 ifeq ($(recovery_resources_private),)
   $(info No private recovery resources for TARGET_DEVICE $(TARGET_DEVICE))
+endif
+
+ifeq ($(recovery_resources_sbin),)
+  $(info No private recovery binaries for TARGET_DEVICE $(TARGET_DEVICE))
 endif
 
 ifeq ($(recovery_resources_devices_common),)
@@ -815,8 +820,11 @@ ifneq ($(BOARD_USES_COMBINED_RECOVERY),true)
 	rm -f $(TARGET_RECOVERY_ROOT_OUT)/init.*.rc
 endif
 	mkdir -p $(TARGET_RECOVERY_ROOT_OUT)/system/bin
+	cp -rf $(TARGET_OUT_OPTIONAL_EXECUTABLES)/busybox $(TARGET_RECOVERY_ROOT_OUT)/sbin/
 	cp -rf $(recovery_resources_common) $(TARGET_RECOVERY_ROOT_OUT)/
 	$(foreach item,$(recovery_resources_private), \
+	  cp -rf $(item) $(TARGET_RECOVERY_ROOT_OUT)/)
+	$(foreach item,$(recovery_resources_sbin), \
 	  cp -rf $(item) $(TARGET_RECOVERY_ROOT_OUT)/)
 	$(foreach item,$(recovery_resources_devices_common), \
 	  cp -rf $(item) $(TARGET_RECOVERY_ROOT_OUT)/)
@@ -834,7 +842,6 @@ else
 	        > $(TARGET_RECOVERY_ROOT_OUT)/default.prop
 endif
 	cp -rf $(TARGET_OUT_EXECUTABLES)/* $(TARGET_RECOVERY_ROOT_OUT)/sbin/
-	cp -rf $(TARGET_OUT_OPTIONAL_EXECUTABLES)/busybox $(TARGET_RECOVERY_ROOT_OUT)/sbin/
 	rm -f $(TARGET_RECOVERY_ROOT_OUT)/sbin/sh
 	ln -s busybox $(TARGET_RECOVERY_ROOT_OUT)/sbin/sh
 	cp -rf $(TARGET_OUT_SHARED_LIBRARIES)/* $(TARGET_RECOVERY_ROOT_OUT)/sbin/
