@@ -78,6 +78,9 @@ INTERNAL_DALVIK_MODULES:=
 # All findbugs xml files
 ALL_FINDBUGS_FILES:=
 
+# Default off
+TWRP_RECOVERY_IN_BOOT_IMAGE:=
+
 ###########################################################
 ## Debugging; prints a variable list to stdout
 ###########################################################

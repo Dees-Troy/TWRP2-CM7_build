@@ -719,11 +719,12 @@ recovery_build_prop := $(INSTALLED_BUILD_PROP_TARGET)
 recovery_binary := $(call intermediates-dir-for,EXECUTABLES,recovery)/recovery
 recovery_resources_common := $(call include-path-for, recovery)/res
 recovery_resources_sbin := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/sbin))
+recovery_resources_etc := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/etc))
 recovery_resources_private := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/res))
 recovery_resources_devices_common := $(call include-path-for, recovery)/gui/devices/common/res
 recovery_resources_devices_private := $(call include-path-for, recovery)/gui/devices/$(DEVICE_RESOLUTION)/res
 recovery_resource_deps := $(shell find $(recovery_resources_common) \
-  $(recovery_resources_private) $(recovery_resources_sbin) $(recovery_resources_devices_private) $(recovery_resources_devices_common) -type f)
+  $(recovery_resources_private) $(recovery_resources_sbin) $(recovery_resources_etc) $(recovery_resources_devices_private) $(recovery_resources_devices_common) -type f)
 recovery_fstab := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery.fstab))
 
 ifeq ($(recovery_resources_private),)
@@ -821,6 +822,8 @@ ifneq ($(BOARD_USES_COMBINED_RECOVERY),true)
 endif
 	mkdir -p $(TARGET_RECOVERY_ROOT_OUT)/system/bin
 	cp -rf $(TARGET_OUT_OPTIONAL_EXECUTABLES)/busybox $(TARGET_RECOVERY_ROOT_OUT)/sbin/
+	cp -rf $(TARGET_OUT_EXECUTABLES)/* $(TARGET_RECOVERY_ROOT_OUT)/sbin/
+	cp -rf $(TARGET_OUT_SHARED_LIBRARIES)/* $(TARGET_RECOVERY_ROOT_OUT)/sbin/
 	cp -rf $(recovery_resources_common) $(TARGET_RECOVERY_ROOT_OUT)/
 	$(foreach item,$(recovery_resources_private), \
 	  cp -rf $(item) $(TARGET_RECOVERY_ROOT_OUT)/)
@@ -832,6 +835,8 @@ endif
 	  cp -rf $(item) $(TARGET_RECOVERY_ROOT_OUT)/)
 	$(foreach item,$(recovery_fstab), \
 	  cp -f $(item) $(TARGET_RECOVERY_ROOT_OUT)/etc/recovery.fstab)
+	$(foreach item,$(recovery_resources_etc), \
+	  cp -rf $(item) $(TARGET_RECOVERY_ROOT_OUT)/)
 	cp $(RECOVERY_INSTALL_OTA_KEYS) $(TARGET_RECOVERY_ROOT_OUT)/res/keys
 ifeq ($(BOARD_USES_COMBINED_RECOVERY),true)
 	cp $(INSTALLED_DEFAULT_PROP_TARGET) $(TARGET_RECOVERY_ROOT_OUT)/default.prop
@@ -841,10 +846,8 @@ else
 	cat $(INSTALLED_DEFAULT_PROP_TARGET) $(recovery_build_prop) \
 	        > $(TARGET_RECOVERY_ROOT_OUT)/default.prop
 endif
-	cp -rf $(TARGET_OUT_EXECUTABLES)/* $(TARGET_RECOVERY_ROOT_OUT)/sbin/
 	rm -f $(TARGET_RECOVERY_ROOT_OUT)/sbin/sh
 	ln -s busybox $(TARGET_RECOVERY_ROOT_OUT)/sbin/sh
-	cp -rf $(TARGET_OUT_SHARED_LIBRARIES)/* $(TARGET_RECOVERY_ROOT_OUT)/sbin/
 	@echo ----- Made recovery filesystem -------- $(TARGET_RECOVERY_ROOT_OUT)
 	@touch $(TARGET_RECOVERY_ROOT_TIMESTAMP)
 
