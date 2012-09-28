@@ -730,13 +730,19 @@ recovery_ramdisk := $(PRODUCT_OUT)/ramdisk-recovery.img
 recovery_build_prop := $(INSTALLED_BUILD_PROP_TARGET)
 recovery_binary := $(call intermediates-dir-for,EXECUTABLES,recovery)/recovery
 recovery_resources_common := $(call include-path-for, recovery)/res
+recovery_resources_sbin := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/sbin))
+recovery_resources_etc := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/etc))
 recovery_resources_private := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/res))
 recovery_resource_deps := $(shell find $(recovery_resources_common) \
-  $(recovery_resources_private) -type f)
+  $(recovery_resources_private) $(recovery_resources_sbin) $(recovery_resources_etc) $(recovery_resources_devices_private) $(recovery_resources_devices_common) -type f)
 recovery_fstab := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery.fstab))
 
 ifeq ($(recovery_resources_private),)
   $(info No private recovery resources for TARGET_DEVICE $(TARGET_DEVICE))
+endif
+
+ifeq ($(recovery_resources_sbin),)
+  $(info No private recovery binaries for TARGET_DEVICE $(TARGET_DEVICE))
 endif
 
 ifeq ($(recovery_fstab),)
@@ -813,15 +819,23 @@ else
 	cp -f $(recovery_initrc) $(TARGET_RECOVERY_ROOT_OUT)/init.rc
 endif
 	cp -f $(recovery_binary) $(TARGET_RECOVERY_ROOT_OUT)/sbin/
+	rm -f $(TARGET_RECOVERY_ROOT_OUT)/sbin/sh
+	ln -s busybox $(TARGET_RECOVERY_ROOT_OUT)/sbin/sh
 ifneq ($(BOARD_USES_COMBINED_RECOVERY),true)
 	rm -f $(TARGET_RECOVERY_ROOT_OUT)/init.*.rc
 endif
 	mkdir -p $(TARGET_RECOVERY_ROOT_OUT)/system/bin
+	cp -rf $(TARGET_OUT_OPTIONAL_EXECUTABLES)/busybox $(TARGET_RECOVERY_ROOT_OUT)/sbin/
+	cp -rf $(TARGET_OUT_EXECUTABLES)/* $(TARGET_RECOVERY_ROOT_OUT)/sbin/
 	cp -rf $(recovery_resources_common) $(TARGET_RECOVERY_ROOT_OUT)/
 	$(foreach item,$(recovery_resources_private), \
 	  cp -rf $(item) $(TARGET_RECOVERY_ROOT_OUT)/)
+	$(foreach item,$(recovery_resources_sbin), \
+	  cp -rf $(item) $(TARGET_RECOVERY_ROOT_OUT)/)
 	$(foreach item,$(recovery_fstab), \
 	  cp -f $(item) $(TARGET_RECOVERY_ROOT_OUT)/etc/recovery.fstab)
+	$(foreach item,$(recovery_resources_etc), \
+	  cp -rf $(item) $(TARGET_RECOVERY_ROOT_OUT)/)
 	cp $(RECOVERY_INSTALL_OTA_KEYS) $(TARGET_RECOVERY_ROOT_OUT)/res/keys
 ifeq ($(BOARD_USES_COMBINED_RECOVERY),true)
 	cp $(INSTALLED_DEFAULT_PROP_TARGET) $(TARGET_RECOVERY_ROOT_OUT)/default.prop
@@ -836,6 +850,9 @@ endif
 
 $(recovery_uncompressed_ramdisk): $(MINIGZIP) \
     $(TARGET_RECOVERY_ROOT_TIMESTAMP)
+	@echo ----- Converting shared objects to /sbin/linker -----
+	$(foreach item,$(wildcard $(TARGET_RECOVERY_ROOT_OUT)/sbin/*), \
+	  cp -f -p $(item) $(item).1; sed "s|/system/bin/linker\x0|/sbin/linker\x0\x0\x0\x0\x0\x0\x0|g" $(item) > $(item).1; sed "s|/system/bin/sh\x0|/sbin/sh\x0\x0\x0\x0\x0\x0\x0|g" $(item).1 > $(item); rm $(item).1;)
 	@echo ----- Making uncompressed recovery ramdisk ------
 	$(MKBOOTFS) $(TARGET_RECOVERY_ROOT_OUT) > $@
 
@@ -843,6 +860,9 @@ $(recovery_ramdisk): $(MKBOOTFS) \
     $(recovery_uncompressed_ramdisk)
 	@echo ----- Making recovery ramdisk ------
 	$(MINIGZIP) < $(recovery_uncompressed_ramdisk) > $@
+	$(hide) if [ -f $(TARGET_DEVICE_DIR)/makemulti.sh ]; then \
+                   $(TARGET_DEVICE_DIR)/makemulti.sh -r; \
+               fi
 
 ifeq ($(BOARD_USES_UBOOT),true)
 #BOARD_USES_UBOOT
