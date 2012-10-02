@@ -825,8 +825,6 @@ ifneq ($(BOARD_USES_COMBINED_RECOVERY),true)
 	rm -f $(TARGET_RECOVERY_ROOT_OUT)/init.*.rc
 endif
 	mkdir -p $(TARGET_RECOVERY_ROOT_OUT)/system/bin
-	cp -rf $(TARGET_OUT_OPTIONAL_EXECUTABLES)/busybox $(TARGET_RECOVERY_ROOT_OUT)/sbin/
-	cp -rf $(TARGET_OUT_EXECUTABLES)/* $(TARGET_RECOVERY_ROOT_OUT)/sbin/
 	cp -rf $(recovery_resources_common) $(TARGET_RECOVERY_ROOT_OUT)/
 	$(foreach item,$(recovery_resources_private), \
 	  cp -rf $(item) $(TARGET_RECOVERY_ROOT_OUT)/)
